@@ -21,7 +21,6 @@ def get_post():
     cursor.execute("SELECT * FROM POSTS")
     data = cursor.fetchall()
     print(data)
-    conn
     return {'fetch  ': data}
 
 
@@ -32,6 +31,53 @@ def create_post(post : Post):
     create_post = cursor.fetchone()
     conn.commit()
     return {'status': create_post}
+
+# find the ppst by id
+def find_post(id):
+    for p in my_post_details:
+        if p['id'] == id:
+            return p
+
+# {id} -> path parameter
+# use of response code 404 and raise exception of item not found.
+# return message with item not found.
+@app.get('/posts/{id}')
+def get_post(id : int, response : Response):
+    print(type(id)) # id -> string but in database -> int 
+    # Here type conversion take place.
+    cursor.execute("SELECT * FROM POSTS WHERE ID=%s",(str(id)))
+    post = cursor.fetchone()
+    if post is None:
+        # response.status_code = 404
+        # response.status_code = status.HTTP_404_NOT_FOUND
+        # return {'message' : f'post with id {id} was not found'}
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail = f'post with id {id} was not found')
+    conn.commit()
+    return {'post_details': post}
+
+
+@app.delete('/posts/{id}')
+def delete_post(id : int):
+    cursor.execute("delete from posts where id = %s returning *",(str(id),))
+    post = cursor.fetchone()
+    if post is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'post with {id} was not found')
+    conn.commit()
+    return {'status': 'succesfully', 'post' : post}
+
+
+# for updating title in the post using put method.
+# put method is use when pass all of the field of the data. updation required all of the field of the data.
+@app.put('/posts/{id}')
+def update_post(id : int, post : Post):
+    cursor.execute("UPDATE POSTS SET TITLE=%s, CONTENT=%s, PUBLISHED=%s WHERE ID = %s returning * ",(post.title,post.content,post.published,str(id),))
+    post = cursor.fetchone()
+    conn.commit()
+    if post is None:
+        raise HTTPException(status_code = status.HTTP_404_NOT_FOUND, detail=f'Post is not found with id = {id}')
+    return {"msg" : f"Post has been updated with id = {id}", "updated post":post}
+
+
 
 # receive the data in the body section of the post
 @app.post('/createpost')
@@ -81,11 +127,6 @@ def create_post(pay : Post):
     return post_dict
 
 
-# find the ppst by id
-def find_post(id):
-    for p in my_post_details:
-        if p['id'] == id:
-            return p
 
 
 def find_index(id):
@@ -93,20 +134,7 @@ def find_index(id):
         if p['id'] == id:
             return ind
 
-# {id} -> path parameter
-# use of response code 404 and raise exception of item not found.
-# return message with item not found.
-@app.get('/posts/{id}')
-def get_post(id : int, response : Response):
-    print(type(id)) # id -> string but in database -> int 
-    # Here type conversion take place.
-    post = find_post(id)
-    if post is None:
-        # response.status_code = 404
-        # response.status_code = status.HTTP_404_NOT_FOUND
-        # return {'message' : f'post with id {id} was not found'}
-        raise HTTPException(status.HTTP_404_NOT_FOUND, detail = f'post with id {id} was not found')
-    return {'post_details': post}
+
 
 
 # get the latest post oh the user
@@ -131,15 +159,5 @@ def delete_post(id : int):
     return {'msg':'post deleted succesfully. '}
 
 
-# for updating title in the post using put method.
-# put method is use when pass all of the field of the data. updation required all of the field of the data.
-@app.put('/posts/{id}')
-def update_post(id : int, post : Post):
-    index = find_index(id)
-    if index is None:
-        raise HTTPException(status_code = status.HTTP_404_NOT_FOUND, detail=f'Post is not found with id = {id}')
-    post_dict = post.dict()
-    post_dict['id'] = id
-    my_post_details[index] = post_dict
-    return {"msg" : f"Post has been updated with id = {id}"}
+
 
