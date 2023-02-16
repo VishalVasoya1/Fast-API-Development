@@ -1,11 +1,17 @@
-from fastapi import FastAPI, Response, status, HTTPException
+from fastapi import FastAPI, Response, status, HTTPException, Depends
 from fastapi.params import Body
 from pydantic import BaseModel
 from typing import Optional
 from random import randrange
 from postgre_connection import cursor,conn
+from sqlalchemy.orm import Session
+import models
+from database import engine, get_db
+
+models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
+
 
 # Lot's of problem with body section : not in proper form, not getting validated, whatever they want they send.
 # that's why get the data in proper schema use pydantic libary base model class.
@@ -14,6 +20,13 @@ class Post(BaseModel):
     content : str
     published : bool = True
     rating  : Optional[int] = None
+
+
+# This is just for the testing of sqlalchemy, models and databse.
+@app.get('/sqlalchemy')
+def test_posts(db : Session = Depends(get_db)):
+    return {"status":"success"}
+
 
 
 @app.get('/posts')
