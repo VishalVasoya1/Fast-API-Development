@@ -12,7 +12,7 @@ Create a API that handle the user's created post and all of the operations that 
 -> sqlalchemy
 
 # Social Media System Demo
--> Create Post
+-> Create Post \n
 -> Update Post
 -> Delete Post
 -> Get Post
