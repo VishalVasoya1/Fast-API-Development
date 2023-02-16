@@ -8,14 +8,14 @@ Create a API that handle the user's created post and all of the operations that 
 -> postgresql
 
 # ORM 
--> Object Relational Mapper
+-> Object Relational Mapper <br>
 -> sqlalchemy
 
 # Social Media System Demo
 -> Create Post <br>
--> Update Post
--> Delete Post
--> Get Post
+-> Update Post <br>
+-> Delete Post <br>
+-> Get Post <br>
 -> All the above task has been done using FastAPI, ORM and Postgresql.
 
 
