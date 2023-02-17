@@ -12,37 +12,49 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
-
+ 
 # Lot's of problem with body section : not in proper form, not getting validated, whatever they want they send.
 # that's why get the data in proper schema use pydantic libary base model class.
 class Post(BaseModel):
     title : str
     content : str
     published : bool = True
-    rating  : Optional[int] = None
 
 
 # This is just for the testing of sqlalchemy, models and databse.
 @app.get('/sqlalchemy')
 def test_posts(db : Session = Depends(get_db)):
-    return {"status":"success"}
+    # grab every single entry from the database
+    posts = db.query(models.Post).all()
+    return {"status":posts}
 
 
 
 @app.get('/posts')
-def get_post():
-    cursor.execute("SELECT * FROM POSTS")
-    data = cursor.fetchall()
-    print(data)
+def get_post(db : Session = Depends(get_db)):
+    # cursor.execute("SELECT * FROM POSTS")
+    # data = cursor.fetchall()
+    # print(data)
+
+    data = db.query(models.Post).all()
     return {'fetch  ': data}
 
 
 @app.post('/posts', status_code=status.HTTP_201_CREATED)
-def create_post(post : Post):
+def create_post(post : Post, db : Session = Depends(get_db)):
     # cursor.execute(f"insert into posts (title,content,published) values ({post.title},{post.content},{post.published})")
-    cursor.execute("insert into posts (title,content,published) values (%s,%s,%s) returning *",(post.title,post.content,post.published))
-    create_post = cursor.fetchone()
-    conn.commit()
+    # cursor.execute("insert into posts (title,content,published) values (%s,%s,%s) returning *",(post.title,post.content,post.published))
+    # create_post = cursor.fetchone()
+    # conn.commit()
+
+    print(post.dict())
+
+    create_post = models.Post(**post.dict())
+
+    # create_post = models.Post(title=post.title, content=post.content, published = post.published) # it's hard when you have 50 or more columns 
+    db.add(create_post) # Post added to database
+    db.commit() # commited the changes into database
+    db.refresh(create_post) # retirve the post that we created and store back to the create_post variable
     return {'status': create_post}
 
 # find the ppst by id
@@ -55,11 +67,15 @@ def find_post(id):
 # use of response code 404 and raise exception of item not found.
 # return message with item not found.
 @app.get('/posts/{id}')
-def get_post(id : int, response : Response):
-    print(type(id)) # id -> string but in database -> int 
-    # Here type conversion take place.
-    cursor.execute("SELECT * FROM POSTS WHERE ID=%s",(str(id)))
-    post = cursor.fetchone()
+def get_post(id : int, response : Response, db : Session = Depends(get_db)):
+    # print(type(id)) # id -> string but in database -> int 
+    # # Here type conversion take place.
+    # cursor.execute("SELECT * FROM POSTS WHERE ID=%s",(str(id)))
+    # post = cursor.fetchone()
+
+    post = db.query(models.Post).filter(models.Post.id == id).first()
+    print(post)
+
     if post is None:
         # response.status_code = 404
         # response.status_code = status.HTTP_404_NOT_FOUND
@@ -70,25 +86,35 @@ def get_post(id : int, response : Response):
 
 
 @app.delete('/posts/{id}')
-def delete_post(id : int):
-    cursor.execute("delete from posts where id = %s returning *",(str(id),))
-    post = cursor.fetchone()
-    if post is None:
+def delete_post(id : int, db : Session = Depends(get_db)):
+    # cursor.execute("delete from posts where id = %s returning *",(str(id),))
+    # post = cursor.fetchone()
+    # conn.commit()
+
+    post = post = db.query(models.Post).filter(models.Post.id == id)
+    if post.first() is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'post with {id} was not found')
-    conn.commit()
-    return {'status': 'succesfully', 'post' : post}
+    post.delete(synchronize_session=False)
+    db.commit()
+    return {'status': f'succesfully deleted post with {id}'}
 
 
 # for updating title in the post using put method.
 # put method is use when pass all of the field of the data. updation required all of the field of the data.
 @app.put('/posts/{id}')
-def update_post(id : int, post : Post):
-    cursor.execute("UPDATE POSTS SET TITLE=%s, CONTENT=%s, PUBLISHED=%s WHERE ID = %s returning * ",(post.title,post.content,post.published,str(id),))
-    post = cursor.fetchone()
-    conn.commit()
+def update_post(id : int, updated_post : Post, db : Session = Depends(get_db)):
+    # cursor.execute("UPDATE POSTS SET TITLE=%s, CONTENT=%s, PUBLISHED=%s WHERE ID = %s returning * ",(post.title,post.content,post.published,str(id),))
+    # post = cursor.fetchone()
+    # conn.commit()
+
+    post_query = db.query(models.Post).filter(models.Post.id == id)
+    post = post_query.first()
     if post is None:
         raise HTTPException(status_code = status.HTTP_404_NOT_FOUND, detail=f'Post is not found with id = {id}')
-    return {"msg" : f"Post has been updated with id = {id}", "updated post":post}
+
+    post_query.update(updated_post.dict(), synchronize_session=False)
+    db.commit()
+    return {"msg" : f"Post has been updated with id = {id}", "updated post":post_query.first()}
 
 
 
