@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
+from typing import Optional
 
 # Lot's of problem with body section : not in proper form, not getting validated, whatever they want they send.
 # that's why get the data in proper schema use pydantic libary base model class.
@@ -33,3 +34,17 @@ class UserOut(BaseModel):
 
     class Config:
         orm_mode = True
+
+class UserLogin(BaseModel):
+    email : EmailStr
+    password : str
+
+
+class Token(BaseModel):
+    access_token : str
+    token_type : str
+
+# data that we embedded into our token
+class TokenData(BaseModel):
+    id : Optional[int] = None
+

@@ -2,15 +2,16 @@ from fastapi import Response, status, HTTPException, Depends, APIRouter
 from typing import List
 from postgre_connection import conn
 from sqlalchemy.orm import Session
-import models, schemas
+import models, schemas, oauth2
 from database import get_db
 
 router = APIRouter(
-    prefix='/posts'
+    prefix='/posts',
+    tags=['Posts']
 )
 
 @router.get('/',response_model=List[schemas.Post])
-def get_post(db : Session = Depends(get_db)):
+def get_post(db : Session = Depends(get_db), current_user : int = Depends(oauth2.get_current_user)):
     # cursor.execute("SELECT * FROM POSTS")
     # data = cursor.fetchall()
     # print(data)
@@ -20,12 +21,12 @@ def get_post(db : Session = Depends(get_db)):
 
 
 @router.post('/', status_code=status.HTTP_201_CREATED, response_model=schemas.Post)
-def create_post(post : schemas.PostCreate, db : Session = Depends(get_db)):
+def create_post(post : schemas.PostCreate, db : Session = Depends(get_db), current_user : int = Depends(oauth2.get_current_user)):
     # cursor.execute(f"insert into posts (title,content,published) values ({post.title},{post.content},{post.published})")
     # cursor.execute("insert into posts (title,content,published) values (%s,%s,%s) returning *",(post.title,post.content,post.published))
     # create_post = cursor.fetchone()
     # conn.commit()
-
+    print(current_user.email)
     print(post.dict()) 
 
     create_post = models.Post(**post.dict())
@@ -42,7 +43,7 @@ def create_post(post : schemas.PostCreate, db : Session = Depends(get_db)):
 # use of response code 404 and raise exception of item not found.
 # return message with item not found.
 @router.get('/{id}', response_model=schemas.Post)
-def get_post(id : int, response : Response, db : Session = Depends(get_db)):
+def get_post(id : int, response : Response, db : Session = Depends(get_db),user_id : int = Depends(oauth2.get_current_user)):
     # print(type(id)) # id -> string but in database -> int 
     # # Here type conversion take place.
     # cursor.execute("SELECT * FROM POSTS WHERE ID=%s",(str(id)))
@@ -61,7 +62,7 @@ def get_post(id : int, response : Response, db : Session = Depends(get_db)):
 
 
 @router.delete('/{id}')
-def delete_post(id : int, db : Session = Depends(get_db)):
+def delete_post(id : int, db : Session = Depends(get_db),user_id : int = Depends(oauth2.get_current_user)):
     # cursor.execute("delete from posts where id = %s returning *",(str(id),))
     # post = cursor.fetchone()
     # conn.commit()
@@ -77,7 +78,7 @@ def delete_post(id : int, db : Session = Depends(get_db)):
 # for updating title in the post using put method.
 # put method is use when pass all of the field of the data. updation required all of the field of the data.
 @router.put('/{id}',response_model=schemas.Post)
-def update_post(id : int, updated_post : schemas.PostBase, db : Session = Depends(get_db)):
+def update_post(id : int, updated_post : schemas.PostBase, db : Session = Depends(get_db),user_id : int = Depends(oauth2.get_current_user)):
     # cursor.execute("UPDATE POSTS SET TITLE=%s, CONTENT=%s, PUBLISHED=%s WHERE ID = %s returning * ",(post.title,post.content,post.published,str(id),))
     # post = cursor.fetchone()
     # conn.commit()
@@ -89,4 +90,5 @@ def update_post(id : int, updated_post : schemas.PostBase, db : Session = Depend
 
     post_query.update(updated_post.dict(), synchronize_session=False)
     db.commit()
-    return {"msg" : f"Post has been updated with id = {id}", "updated post":post_query.first()}
+    return post
+    # return {"msg" : f"Post has been updated with id = {id}", "updated_post":post_query.first()}
