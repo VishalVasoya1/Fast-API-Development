@@ -1,18 +1,19 @@
-from jose import JWSError, jwt
+from jose import JWTError, jwt
 import schemas, database, models
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from fastapi import HTTPException, status, Depends
 from fastapi.security import OAuth2PasswordBearer
+
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='login')
 
 # SECRET_KEY
 # ALGORITHM
 # EXPRIATION TIME OF TOKEN
 
-SECRET_KEY = "09cfbit7h5ihvhvipu9e4t74t845yth8rvh745gh547gh45ghd7rfg4h75gh785"
+SECRET_KEY = "09cfbit7h5ihvhvipu9e4t74t845yth8rvh745gh547gh45ghd7rfg4fh75gh785"
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 1
+ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
 # access token -> contain a pyload -> whatever the data we want to send -> pass into dictionary
 def create_access_token(data : dict):
@@ -35,7 +36,7 @@ def verify_access_token(token : str, credentials_exception):
 
         token_data = schemas.TokenData(id = id)
 
-    except JWSError:
+    except JWTError:
         raise credentials_exception
 
     return token_data
