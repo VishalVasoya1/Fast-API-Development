@@ -5,6 +5,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from urllib.parse import quote_plus
+import psycopg2 
+from psycopg2.extras import RealDictCursor
 
 engine = create_engine("postgresql://postgres:%s@localhost/fast-api" % quote_plus("Vishal12345@@"))
 # SQLALCHEMY_DATABASE_URL = "postgresql://postgre:{}@localhost/fastapi".format("Vishal12345@@")
@@ -23,3 +25,13 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+while True:
+    try:
+        conn = psycopg2.connect(host='localhost',database='fast-api',user='postgres',password='Vishal12345@@', cursor_factory= RealDictCursor)
+        cursor = conn.cursor()
+        print('Database Connection was succesful!')
+        break
+    except Exception as e:
+        print(e)

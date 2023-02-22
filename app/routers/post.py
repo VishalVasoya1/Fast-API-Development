@@ -1,22 +1,22 @@
 from fastapi import Response, status, HTTPException, Depends, APIRouter
-from typing import List
-from postgre_connection import conn
+from typing import List, Optional
 from sqlalchemy.orm import Session
 import models, schemas, oauth2
-from database import get_db
-
+from database import get_db, conn
 router = APIRouter(
     prefix='/posts',
     tags=['Posts']
 )
 
 @router.get('/',response_model=List[schemas.Post])
-def get_post(db : Session = Depends(get_db), current_user : int = Depends(oauth2.get_current_user)):
+def get_post(db : Session = Depends(get_db), current_user : int = Depends(oauth2.get_current_user), limit:int=10, skip:int=0, search:Optional[str]=""):
     # cursor.execute("SELECT * FROM POSTS")
     # data = cursor.fetchall()
     # print(data)
-
-    data = db.query(models.Post).all()
+    print(current_user.id)
+    print(limit)
+    print(search)
+    data = db.query(models.Post).filter(models.Post.content.contains(search)).limit(limit).offset(skip).all()
     return data
 
 
@@ -26,10 +26,12 @@ def create_post(post : schemas.PostCreate, db : Session = Depends(get_db), curre
     # cursor.execute("insert into posts (title,content,published) values (%s,%s,%s) returning *",(post.title,post.content,post.published))
     # create_post = cursor.fetchone()
     # conn.commit()
-    print(current_user.email)
-    print(post.dict()) 
+    # print(current_user)
+    # print(current_user.email)
+    # print(current_user.id)
+    # print(post.dict()) 
 
-    create_post = models.Post(**post.dict())
+    create_post = models.Post(owner_id = current_user.id, **post.dict())
 
     # create_post = models.Post(title=post.title, content=post.content, published = post.published) # it's hard when you have 50 or more columns 
     db.add(create_post) # Post added to database
@@ -57,20 +59,30 @@ def get_post(id : int, response : Response, db : Session = Depends(get_db), curr
         # response.status_code = status.HTTP_404_NOT_FOUND
         # return {'message' : f'post with id {id} was not found'}
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail = f'post with id {id} was not found')
+
+    if post.owner_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f'You are not authorized to perform requested action.')
+
     conn.commit()
     return post
 
 
-@router.delete('/{id}')
-def delete_post(id : int, db : Session = Depends(get_db),current_user : int = Depends(oauth2.get_current_user)):
+@router.delete('/{id}', status_code=status.HTTP_204_NO_CONTENT)
+def delete_post(id : int, db : Session = Depends(get_db), current_user : int = Depends(oauth2.get_current_user)):
     # cursor.execute("delete from posts where id = %s returning *",(str(id),))
     # post = cursor.fetchone()
     # conn.commit()
 
-    post = post = db.query(models.Post).filter(models.Post.id == id)
-    if post.first() is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'post with {id} was not found')
-    post.delete(synchronize_session=False)
+    post_query = post = db.query(models.Post).filter(models.Post.id == id)
+    post = post_query.first()
+
+    if post is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'post with id {id} was not found')
+
+    if post.owner_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f'You are not authorized to perform requested action.')
+
+    post_query.delete(synchronize_session=False)
     db.commit()
     return {'status': f'succesfully deleted post with {id}'}
 
@@ -78,7 +90,7 @@ def delete_post(id : int, db : Session = Depends(get_db),current_user : int = De
 # for updating title in the post using put method.
 # put method is use when pass all of the field of the data. updation required all of the field of the data.
 @router.put('/{id}',response_model=schemas.Post)
-def update_post(id : int, updated_post : schemas.PostBase, db : Session = Depends(get_db), current_user : int = Depends(oauth2.get_current_user)):
+def update_post(id : int, updated_post : schemas.PostBase, db : Session = Depends(get_db), current_user  : int = Depends(oauth2.get_current_user)):
     # cursor.execute("UPDATE POSTS SET TITLE=%s, CONTENT=%s, PUBLISHED=%s WHERE ID = %s returning * ",(post.title,post.content,post.published,str(id),))
     # post = cursor.fetchone()
     # conn.commit()
@@ -87,6 +99,9 @@ def update_post(id : int, updated_post : schemas.PostBase, db : Session = Depend
     post = post_query.first()
     if post is None:
         raise HTTPException(status_code = status.HTTP_404_NOT_FOUND, detail=f'Post is not found with id = {id}')
+
+    if post.owner_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f'You are not authorized to perform requested action.')
 
     post_query.update(updated_post.dict(), synchronize_session=False)
     db.commit()
