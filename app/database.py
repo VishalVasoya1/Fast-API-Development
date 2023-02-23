@@ -7,8 +7,9 @@ from sqlalchemy.orm import sessionmaker
 from urllib.parse import quote_plus
 import psycopg2 
 from psycopg2.extras import RealDictCursor
+from .config import settings
 
-engine = create_engine("postgresql://postgres:%s@localhost/fast-api" % quote_plus("Vishal12345@@"))
+engine = create_engine(f"postgresql://{settings.database_username}:%s@{settings.database_hostname}:{settings.database_port}/{settings.database_name}" % quote_plus(f"{settings.database_password}"))
 # SQLALCHEMY_DATABASE_URL = "postgresql://postgre:{}@localhost/fastapi".format("Vishal12345@@")
 # conn = psycopg2.connect(host='localhost',database='fast-api',user='postgres',password='Vishal12345@@', cursor_factory= RealDictCursor)
 # engine = create_engine(SQLALCHEMY_DATABASE_URL)
@@ -27,11 +28,11 @@ def get_db():
         db.close()
 
 
-while True:
-    try:
-        conn = psycopg2.connect(host='localhost',database='fast-api',user='postgres',password='Vishal12345@@', cursor_factory= RealDictCursor)
-        cursor = conn.cursor()
-        print('Database Connection was succesful!')
-        break
-    except Exception as e:
-        print(e)
+# while True:
+#     try:
+#         conn = psycopg2.connect(host='localhost',database='fast-api',user='postgres',password='Vishal12345@@', cursor_factory= RealDictCursor)
+#         cursor = conn.cursor()
+#         print('Database Connection was succesful!')
+#         break
+#     except Exception as e:
+#         print(e)

@@ -1,7 +1,12 @@
 from fastapi import FastAPI
-import models
-from database import engine
-from routers import post, user, auth
+from . import models
+from .database import engine
+from .routers import post, user, auth
+from pydantic import BaseSettings
+from .config import settings
+
+
+
 
 models.Base.metadata.create_all(bind=engine)
 
