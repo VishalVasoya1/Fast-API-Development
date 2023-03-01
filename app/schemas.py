@@ -40,6 +40,12 @@ class Post(PostBase):
 # if you want user only update published column so you can create a structure for it.
 
 
+class PostOut(BaseModel):
+    Post : Post
+    votes : int
+
+    class Config:
+        orm_mode = True
 
 
 
