@@ -9,7 +9,9 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from .config import settings
 
-engine = create_engine(f"postgresql://{settings.database_username}:%s@{settings.database_hostname}:{settings.database_port}/{settings.database_name}" % quote_plus(f"{settings.database_password}"))
+SQLALCHEMY_DATABASE_URL = f"postgresql://{settings.database_username}:%s@{settings.database_hostname}:{settings.database_port}/{settings.database_name}" % quote_plus(f"{settings.database_password}")
+
+engine = create_engine(SQLALCHEMY_DATABASE_URL)
 # SQLALCHEMY_DATABASE_URL = "postgresql://postgre:{}@localhost/fastapi".format("Vishal12345@@")
 # conn = psycopg2.connect(host='localhost',database='fast-api',user='postgres',password='Vishal12345@@', cursor_factory= RealDictCursor)
 # engine = create_engine(SQLALCHEMY_DATABASE_URL)

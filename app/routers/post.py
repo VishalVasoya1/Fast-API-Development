@@ -21,7 +21,7 @@ def get_post(db : Session = Depends(get_db), current_user : int = Depends(oauth2
     print(search)
     posts = db.query(models.Post).filter(models.Post.content.contains(search)).limit(limit).offset(skip).all()
 
-    results = db.query(models.Post, func.count(models.Vote.post_id).label("votes")).join(models.Vote,models.Vote.post_id == models.Post.id, isouter=True).group_by(models.Post.id).filter().filter(models.Post.content.contains(search)).limit(limit).offset(skip).all()
+    results = db.query(models.Post, func.count(models.Vote.post_id).label("votes")).join(models.Vote,models.Vote.post_id == models.Post.id, isouter=True).group_by(models.Post.id).filter(models.Post.content.contains(search)).limit(limit).offset(skip).all()
     # post = [{"Posts": {post.id, post.title, post.content},"votes":_} for post, _ in results]
         
     return results
@@ -51,14 +51,16 @@ def create_post(post : schemas.PostCreate, db : Session = Depends(get_db), curre
 # {id} -> path parameter
 # use of response code 404 and raise exception of item not found.
 # return message with item not found.
-@router.get('/{id}', response_model=schemas.Post)
-def get_post(id : int, response : Response, db : Session = Depends(get_db), current_user : int = Depends(oauth2.get_current_user)):
+@router.get('/{id}', response_model=schemas.PostOut)
+def get_post(id : int, db : Session = Depends(get_db), current_user : int = Depends(oauth2.get_current_user)):
     # print(type(id)) # id -> string but in database -> int 
     # # Here type conversion take place.
     # cursor.execute("SELECT * FROM POSTS WHERE ID=%s",(str(id)))
     # post = cursor.fetchone()
 
-    post = db.query(models.Post).filter(models.Post.id == id).first()
+    # post = db.query(models.Post).filter(models.Post.id == id).first()
+    # print(post) 
+    post = db.query(models.Post, func.count(models.Vote.post_id).label("votes")).join(models.Vote,models.Vote.post_id == models.Post.id, isouter=True).group_by(models.Post.id).filter(models.Post.id == id).first()
     print(post)
 
     if post is None:
@@ -67,8 +69,8 @@ def get_post(id : int, response : Response, db : Session = Depends(get_db), curr
         # return {'message' : f'post with id {id} was not found'}
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail = f'post with id {id} was not found')
 
-    if post.owner_id != current_user.id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f'You are not authorized to perform requested action.')
+    # if post.owner_id != current_user.id:
+    #     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f'You are not authorized to perform requested action.')
 
     # conn.commit()
     return post
