@@ -1,4 +1,4 @@
-venv
+venv/
 __pycache__
-postgre_files
+postgre_files/
 .env
