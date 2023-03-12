@@ -19,9 +19,18 @@ app.add_middleware(
     allow_headers=["*"], # spcific header
 )
 
+# get request function with path operation.
+@app.get('/')
+def root():
+    return {'Status':'Application Ran succesfully On Server'}
+
+
 app.include_router(post.router)
 app.include_router(user.router)
 app.include_router(auth.router)
 app.include_router(vote.router)
+
+
+
 
 

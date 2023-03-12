@@ -1,0 +1,33 @@
+version: "3"
+services: 
+  api:
+    build: .
+    depends_on:
+      - postgres
+    ports:
+      - 8000:8000
+    volumes:
+      - ./:/usr/src/app:ro
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    # env_file:
+    #   - ./.env
+    environment:
+      - DATABASE_HOSTNAME = localhost
+      - DATABASE_PORT = 5432
+      - DATABASE_PASSWORD = Vishal12345
+      - DATABASE_NAME = fast-api
+      - DATABASE_USERNAME = postgres
+      - SECRET_KEY = 09cfbit7h5ihvhvipu9e4t74t845yth8rvh745gh547gh45ghd7rfg4fh75gh785
+      - ALGORITHAM = HS256
+      - ACCESS_TOKEN_EXPIRE_MINUTE = 30
+  
+  postgres:
+    image: postgres
+    environment:
+      - POSTGRES_PASSWORD=Vishal12345
+      - POSTGRES_DB=fast-api
+    volumes:
+      - postgres-db:/var/lib/postgresql/data
+
+volumes:
+  postgres-db:
