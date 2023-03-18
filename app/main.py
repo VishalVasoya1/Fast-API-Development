@@ -6,6 +6,11 @@ from .routers import post, user, auth, vote
 from pydantic import BaseSettings
 from .config import settings
 
+from pyngrok import ngrok
+
+public_url = ngrok.connect(8000).public_url
+
+
 # models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
